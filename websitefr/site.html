@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>College Picker</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    .roulette-container {
+      position: relative;
+      width: 600px;
+      height: 120px;
+      overflow: hidden;
+      border: 4px solid gold;
+      margin-bottom: 20px;
+      background: black;
+    }
+    .roulette {
+      display: flex;
+      gap: 40px;
+      padding: 20px;
+      white-space: nowrap;
+      transform: translateX(0);
+      transition: transform 0.5s ease-out;
+    }
+    .college {
+      min-width: 200px;
+      text-align: center;
+      font-size: 1.5em;
+      background: #222;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    #startButton {
+      padding: 10px 20px;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="roulette-container">
+  <div id="roulette" class="roulette">
+
+  </div>
+</div>
+
+<button id="startButton">Spin!</button>
+
+<script>
+  const colleges = [
+    "Gonzaga",
+    "UC Boulder",
+    "Augusta University",
+    "School of Mines"
+  ];
+
+  const roulette = document.getElementById('roulette');
+  const startButton = document.getElementById('startButton');
+
+
+  for (let i = 0; i < 30; i++) {
+    colleges.forEach(name => {
+      const div = document.createElement('div');
+      div.className = 'college';
+      div.innerText = name;
+      roulette.appendChild(div);
+    });
+  }
+
+  let animation;
+  let position = 0;
+  let speed = 20;
+  let isSpinning = false;
+
+  function spin() {
+    if (isSpinning) return;
+    isSpinning = true;
+    cancelAnimationFrame(animation);
+    speed = 20;
+    animate();
+    setTimeout(slowDown, 3000);
+  }
+
+  function animate() {
+    position -= speed;
+
+    if (position < -roulette.scrollWidth / 2) {
+      position = 0;
+    }
+    roulette.style.transform = `translateX(${position}px)`;
+    animation = requestAnimationFrame(animate);
+  }
+
+  function slowDown() {
+    let interval = setInterval(() => {
+      speed *= 0.95;
+      if (speed < 0.5) {
+        clearInterval(interval);
+        cancelAnimationFrame(animation);
+        alignSelection();
+      }
+    }, 50);
+  }
+
+  function alignSelection() {
+    const containerWidth = document.querySelector('.roulette-container').offsetWidth;
+    const collegeElems = document.querySelectorAll('.college');
+    const collegeWidth = collegeElems[0].offsetWidth + 40;
+
+
+    let targetIndex = 0;
+    for (let i = 0; i < collegeElems.length; i++) {
+      if (collegeElems[i].innerText === "Gonzaga") {
+        const collegePos = i * collegeWidth;
+        const currentPos = -position + containerWidth / 2 - collegeWidth / 2;
+        if (collegePos > currentPos) {
+          targetIndex = i;
+          break;
+        }
+      }
+    }
+
+    const targetPosition = -(targetIndex * collegeWidth) + (containerWidth / 2 - collegeWidth / 2);
+
+    roulette.style.transition = 'transform 1s ease-out';
+    roulette.style.transform = `translateX(${targetPosition}px)`;
+
+    isSpinning = false;
+  }
+
+  startButton.addEventListener('click', spin);
+</script>
+
+</body>
+</html>

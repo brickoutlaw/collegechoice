@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>College Picker</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    .roulette-container {
+      position: relative;
+      width: 600px;
+      height: 120px;
+      overflow: hidden;
+      border: 4px solid gold;
+      margin-bottom: 20px;
+      background: black;
+      transition: border-color 0.2s;
+    }
+    .roulette {
+      display: flex;
+      gap: 40px;
+      padding: 20px;
+      white-space: nowrap;
+      transform: translateX(0);
+      transition: transform 0.5s ease-out;
+    }
+    .college {
+      min-width: 200px;
+      text-align: center;
+      font-size: 1.5em;
+      background: #222;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    #startButton {
+      padding: 10px 20px;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="roulette-container" id="rouletteContainer">
+  <div id="roulette" class="roulette">
+    <!-- College names inserted by JS -->
+  </div>
+</div>
+
+<button id="startButton">Spin!</button>
+
+<!-- Click sound -->
+<audio id="clickSound" src="metal.mp3"></audio>
+
+<script>
+  const colleges = [
+    "Gonzaga",
+    "UC Boulder",
+    "Augusta University",
+    "School of Mines"
+  ];
+
+  const roulette = document.getElementById('roulette');
+  const startButton = document.getElementById('startButton');
+  const clickSound = document.getElementById('clickSound');
+  const rouletteContainer = document.getElementById('rouletteContainer');
+
+  // Fill roulette with lots of colleges (repeated)
+  for (let i = 0; i < 30; i++) {  
+    colleges.forEach(name => {
+      const div = document.createElement('div');
+      div.className = 'college';
+      div.innerText = name;
+      roulette.appendChild(div);
+    });
+  }
+
+  let animation;
+  let position = 0;
+  let speed = 20;
+  let isSpinning = false;
+  let lastPassedIndex = -1;
+  let flashingInterval;
+
+  function spin() {
+    if (isSpinning) return; 
+    isSpinning = true;
+    cancelAnimationFrame(animation);
+    speed = 20;
+    animate();
+    startFlashing();
+    setTimeout(slowDown, 3000); 
+  }
+
+  function animate() {
+    position -= speed;
+    const containerWidth = rouletteContainer.offsetWidth;
+    const collegeElems = document.querySelectorAll('.college');
+    const collegeWidth = collegeElems[0].offsetWidth + 40; 
+
+    // Loop
+    if (position < -roulette.scrollWidth / 2) {
+      position = 0;
+    }
+
+    roulette.style.transform = `translateX(${position}px)`;
+
+    // Play click
+    const center = -position + containerWidth / 2;
+    const currentIndex = Math.floor(center / collegeWidth);
+    if (currentIndex !== lastPassedIndex) {
+      clickSound.currentTime = 0;
+      clickSound.play();
+      lastPassedIndex = currentIndex;
+    }
+
+    animation = requestAnimationFrame(animate);
+  }
+
+  function slowDown() {
+    let totalDuration = 4000; // 4 seconds of slowdown
+    let elapsed = 0;
+    const startSpeed = speed;
+
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3); // Smooth curve
+
+    let interval = setInterval(() => {
+      elapsed += 50;
+      let progress = Math.min(elapsed / totalDuration, 1);
+      let easedProgress = easeOutCubic(progress);
+
+      speed = startSpeed * (1 - easedProgress); // Decrease speed smoothly
+
+      if (progress >= 1) {
+        clearInterval(interval);
+        cancelAnimationFrame(animation);
+        alignSelection();
+      }
+    }, 50);
+  }
+
+  function alignSelection() {
+    const containerWidth = rouletteContainer.offsetWidth;
+    const collegeElems = document.querySelectorAll('.college');
+    const collegeWidth = collegeElems[0].offsetWidth + 40;
+
+    let targetIndex = 0;
+    for (let i = 0; i < collegeElems.length; i++) {
+      if (collegeElems[i].innerText === "Gonzaga") {
+        const collegePos = i * collegeWidth;
+        const currentPos = -position + containerWidth / 2 - collegeWidth / 2;
+        if (collegePos > currentPos) {
+          targetIndex = i;
+          break;
+        }
+      }
+    }
+
+    const targetPosition = -(targetIndex * collegeWidth) + (containerWidth / 2 - collegeWidth / 2);
+
+    roulette.style.transition = 'transform 1s ease-out';
+    roulette.style.transform = `translateX(${targetPosition}px)`;
+
+    stopFlashing();
+    isSpinning = false;
+  }
+
+  startButton.addEventListener('click', spin);
+
+  // Flashing border
+  function startFlashing() {
+    const colors = ['gold', 'red', 'lime', 'blue', 'white', 'cyan', 'magenta'];
+    flashingInterval = setInterval(() => {
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      rouletteContainer.style.borderColor = randomColor;
+    }, 100);
+  }
+
+  function stopFlashing() {
+    clearInterval(flashingInterval);
+    rouletteContainer.style.borderColor = 'gold';
+  }
+</script>
+
+</body>
+</html>

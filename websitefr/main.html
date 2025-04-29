@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>College Result</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    .roulette-container {
+      position: relative;
+      width: 600px;
+      height: 120px;
+      overflow: hidden;
+      border: 4px solid gold;
+      margin-bottom: 20px;
+      background: black;
+      transition: border-color 0.2s;
+    }
+    .roulette {
+      display: flex;
+      gap: 40px;
+      padding: 20px;
+      white-space: nowrap;
+      transform: translateX(0);
+      transition: transform 0.5s ease-out;
+    }
+    .college {
+      min-width: 200px;
+      text-align: center;
+      font-size: 1.5em;
+      background: #222;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    #startButton {
+      padding: 10px 20px;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    #confetti {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="roulette-container" id="rouletteContainer">
+  <div id="roulette" class="roulette">
+
+  </div>
+</div>
+
+<button id="startButton">Spin!</button>
+
+<audio id="clickSound" src="metal.mp3"></audio>
+
+<audio id="finalSound" src="celebration.mp3"></audio>
+
+<div id="confetti"></div>
+
+<script>
+  const colleges = [
+    "Gonzaga",
+    "UC Boulder",
+    "Augusta University",
+    "School of Mines"
+  ];
+
+  const roulette = document.getElementById('roulette');
+  const startButton = document.getElementById('startButton');
+  const clickSound = document.getElementById('clickSound');
+  const finalSound = document.getElementById('finalSound');
+  const confettiContainer = document.getElementById('confetti');
+  const rouletteContainer = document.getElementById('rouletteContainer');
+
+
+  for (let i = 0; i < 30; i++) {  
+    colleges.forEach(name => {
+      const div = document.createElement('div');
+      div.className = 'college';
+      div.innerText = name;
+      roulette.appendChild(div);
+    });
+  }
+
+  let animation;
+  let position = 0;
+  let speed = 20;
+  let isSpinning = false;
+  let lastPassedIndex = -1;
+  let flashingInterval;
+
+  function spin() {
+    if (isSpinning) return; 
+    isSpinning = true;
+    cancelAnimationFrame(animation);
+    speed = 20;
+    animate();
+    startFlashing();
+    setTimeout(slowDown, 3000); 
+  }
+
+  function animate() {
+    position -= speed;
+    const containerWidth = rouletteContainer.offsetWidth;
+    const collegeElems = document.querySelectorAll('.college');
+    const collegeWidth = collegeElems[0].offsetWidth + 40; 
+
+ 
+    if (position < -roulette.scrollWidth / 2) {
+      position = 0;
+    }
+
+    roulette.style.transform = `translateX(${position}px)`;
+
+
+    const center = -position + containerWidth / 2;
+    const currentIndex = Math.floor(center / collegeWidth);
+    if (currentIndex !== lastPassedIndex) {
+      playClickSound(); 
+      lastPassedIndex = currentIndex;
+    }
+
+    animation = requestAnimationFrame(animate);
+  }
+
+  function playClickSound() {
+    const soundClone = clickSound.cloneNode(); 
+    soundClone.play(); 
+  }
+
+  function slowDown() {
+    let totalDuration = 4000; 
+    let elapsed = 0;
+    const startSpeed = speed;
+
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3); 
+
+    let interval = setInterval(() => {
+      elapsed += 50;
+      let progress = Math.min(elapsed / totalDuration, 1);
+      let easedProgress = easeOutCubic(progress);
+
+      speed = startSpeed * (1 - easedProgress);
+
+      if (progress >= 1) {
+        clearInterval(interval);
+        cancelAnimationFrame(animation);
+        alignSelection();
+      }
+    }, 50);
+  }
+
+  function alignSelection() {
+    const containerWidth = rouletteContainer.offsetWidth;
+    const collegeElems = document.querySelectorAll('.college');
+    const collegeWidth = collegeElems[0].offsetWidth + 40;
+
+    let targetIndex = 0;
+    for (let i = 0; i < collegeElems.length; i++) {
+      if (collegeElems[i].innerText === "Gonzaga") {
+        const collegePos = i * collegeWidth;
+        const currentPos = -position + containerWidth / 2 - collegeWidth / 2;
+        if (collegePos > currentPos) {
+          targetIndex = i;
+          break;
+        }
+      }
+    }
+
+    const targetPosition = -(targetIndex * collegeWidth) + (containerWidth / 2 - collegeWidth / 2);
+
+    roulette.style.transition = 'transform 1s ease-out';
+    roulette.style.transform = `translateX(${targetPosition}px)`;
+
+    stopFlashing();
+    isSpinning = false;
+
+
+    playFinalSound();
+    showConfetti();
+  }
+
+  function playFinalSound() {
+    finalSound.play();
+    console.log("Final sound played");
+  }
+
+  function showConfetti() {
+    // Show confetti
+    confettiContainer.style.display = 'block';
+
+    for (let i = 0; i < 100; i++) {
+      const confettiPiece = document.createElement('div');
+      confettiPiece.style.position = 'absolute';
+      confettiPiece.style.width = `${Math.random() * 10 + 5}px`;
+      confettiPiece.style.height = `${Math.random() * 10 + 5}px`;
+      confettiPiece.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+      confettiPiece.style.left = `${Math.random() * 100}%`;
+      confettiPiece.style.animation = `fall ${Math.random() * 3 + 2}s linear infinite`;
+      confettiContainer.appendChild(confettiPiece);
+    }
+
+    setTimeout(() => {
+      confettiContainer.style.display = 'none';
+    }, 5000);
+  }
+
+  startButton.addEventListener('click', spin);
+
+  function startFlashing() {
+    const colors = ['gold', 'red', 'lime', 'blue', 'white', 'cyan', 'magenta'];
+    flashingInterval = setInterval(() => {
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      rouletteContainer.style.borderColor = randomColor;
+    }, 100);
+  }
+
+  function stopFlashing() {
+    clearInterval(flashingInterval);
+    rouletteContainer.style.borderColor = 'gold';
+  }
+</script>
+
+
+<style>
+  @keyframes fall {
+    0% {
+      transform: translateY(-100vh) rotate(0deg);
+    }
+    100% {
+      transform: translateY(100vh) rotate(360deg);
+    }
+  }
+</style>
+
+</body>
+</html>
